@@ -1,0 +1,10 @@
+% layout 'default';
+% title 'STS';
+
+<h2><%= $msg %></h2>
+
+<pre>
+  prop_name: <%= stash('prop_name') %>
+  domain_id: <%= stash('domain_id') %>
+  query: <%= param('q') %>
+</pre>
