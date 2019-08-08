@@ -6,7 +6,8 @@ Outline of RDBMS tables necessary for an STS prototype, based on [the spec](../R
 
 `authority` enumerates the terminology authorities needed for terms and domains.
 
-|| column | desc ||
+| column | desc | attrs |
+| ------ | ---- | ---- |
 | id | standardized authority id | text, non-null, unique (PK) |
 | name | authority human-readable name | text, non-null |
 | uri | authority url/uri | text, null |
@@ -25,7 +26,8 @@ Outline of RDBMS tables necessary for an STS prototype, based on [the spec](../R
 
 `term` records the dictionary of terms that domains may incorporate
 
-|| column | desc | attrs ||
+| column | desc | attrs |
+| ------ | ---- | ---- |
 | id | standardized term id | text, non-null, unique (PK) |
 | term | the term as string | text, non-null |
 | concept\_code | external concept code mapped to this term | text, null |
