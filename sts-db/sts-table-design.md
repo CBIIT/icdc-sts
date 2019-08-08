@@ -15,7 +15,8 @@ Outline of RDBMS tables necessary for an STS prototype, based on [the spec](../R
 
 `domain` records the domain metadata
 
-|| column | desc | attrs ||
+| column | desc | attrs |
+| ------ | ---- | ---- |
 | id | standardized domain id | text, non-null, unique (PK) |
 | name | domain human-readable name | text, non-null |
 | authority | FK to `authority` | fk(authority.id), null |
@@ -34,7 +35,8 @@ Outline of RDBMS tables necessary for an STS prototype, based on [the spec](../R
 
 `term_domain` associates terms with domains. The domain contents are specified in this table.
 
-|| column | desc | attr ||
+| column | desc | attr |
+| ------ | ---- | ---- |
 | domain\_id | domain id | fk(domain.id), non-null |
 | term\_id | term id | fk(term.id), non-null |
 
@@ -42,7 +44,8 @@ Outline of RDBMS tables necessary for an STS prototype, based on [the spec](../R
 
 `prop_domain` allows lookup of domain by property name.
 
-|| column | desc | attr ||
+| column | desc | attr |
+| ------ | ---- | ---- |
 | property | MDF property | text, non-null | "
 | domain_id | domain id | fk(domain.id), non-null |
 
