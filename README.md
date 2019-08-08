@@ -10,13 +10,13 @@ The STS is model aware. Validation queries can address the value domain of a pro
 
 ## Endpoints
 
-The STS endpoints have three components: <domain>, <action> and <query>
+The STS endpoints have three components: \<domain\>, \<action\> and \<query\>
 
     https://example/<domain>/<action>?<query>
 
 * Domain
 
-The <domain> can either be the STS domain identifier, or it can reference the model property (as defined in the [MDF](mdflink) whose value domain is required:
+The \<domain\> can either be the STS domain identifier, or it can reference the model property (as defined in the [MDF](mdflink) whose value domain is required:
 
     https://example/stsdom:102384/<...>
     https://example/domain/disease/<...>
