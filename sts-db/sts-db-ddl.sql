@@ -7,6 +7,7 @@ create table authority (
 create table domain (
   id integer primary key,
   name text not null,
+  domain_code text,
   authority integer,
   foreign key (authority) references authority (id) 
 );

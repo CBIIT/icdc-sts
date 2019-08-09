@@ -20,7 +20,9 @@ Outline of RDBMS tables necessary for an STS prototype, based on [the spec](../R
 | ------ | ---- | ---- |
 | id | standardized domain id | text, non-null, unique (PK) |
 | name | domain human-readable name | text, non-null |
+| domain_code | authority's code for this domain | text, null |
 | authority | FK to `authority` | fk(authority.id), null |
+
 
 ## Term table
 
@@ -55,32 +57,38 @@ Outline of RDBMS tables necessary for an STS prototype, based on [the spec](../R
 
 * All terms in a given domain, by domain name
 
-        select d.name as domain, term.*
-          from inner join term t, term_domain td, domain d
-                   on t.id=td.term and d.id=td.domain
-          where d.name = :domain_name:
-
+        select d.name as domain, t.*
+        from term t inner join term_domain td
+          on t.id=td.term
+        inner join domain d
+          on td.domain=d.id
+        where d.name = :domain_name:
 
 * Whether given term is present in given domain
 
-        select d.name as domain, term.*
-        from inner join term t, term_domain td, domain d
-        on t.id=td.term and d.id=td.domain
-        where t.name = :term_name: and d.name = :domain_name:
+        select d.name as domain, t.*
+        from term t inner join term_domain td
+          on t.id=td.term
+        inner join domain d
+          on td.domain=d.id
+        where t.name = :term_name:
+          and d.name = :domain_name:
 
 * All terms
 
-        select t.name from term t;
+        select t.name from term t
 
 * All domain names
 
-        select d.name from domain d;
+        select d.name from domain d
 
 * Search terms in a given domain (LIKE pattern)
 
-        select d.name as domain, term.*
-        from inner join term t, term_domain td, domain d
-        on t.id=td.term and d.id=td.domain
+        select d.name as domain, t.*
+        from term t inner join term_domain td
+          on t.id=td.term
+        inner join domain d
+          on td.domain=d.id
         where d.name = :domain_name: and
-        t.name like :term_search:
+          t.name like :term_search:
 
