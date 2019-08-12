@@ -74,9 +74,10 @@ Outline of RDBMS tables necessary for an STS prototype, based on [the spec](../R
         where t.name = :term_name:
           and d.name = :domain_name:
 
+
 * All terms
 
-        select t.name from term t
+        select t.term from term t
 
 * All domain names
 
@@ -90,5 +91,5 @@ Outline of RDBMS tables necessary for an STS prototype, based on [the spec](../R
         inner join domain d
           on td.domain=d.id
         where d.name = :domain_name: and
-          t.name like :term_search:
+          t.term like :term_search:
 
