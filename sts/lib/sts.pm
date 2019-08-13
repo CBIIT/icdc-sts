@@ -5,7 +5,7 @@ use Cwd;
 
 our %stmt = (
   validate => <<Q,
-    select d.name as domain, t.*
+    select d.name as domain, d.id as domain_id, t.id as term_id, t.term as term
     from term t inner join term_domain td
     on t.id=td.term
     inner join domain d
@@ -14,33 +14,67 @@ our %stmt = (
     and d.id = ?
 Q
   list => <<Q,
-  select t.*
-    from term t inner join term_domain td
-    on t.id=td.term
-    inner join domain d
-    on td.domain=d.id
+  select t.term as term, t.id as term_id, t.concept_code as concept_code,
+      au.name as term_authority, au.uri as term_authority_uri
+      from term t 
+      inner join domain d
+      on t.id=td.term
+      inner join term_domain td
+      on td.domain=d.id
+      inner join authority au
+      on t.authority = au.id
+      where d.id = ?
+Q
+  search_terms => <<Q,
+  select t.term as term, t.id as term_id, t.concept_code as concept_code,
+      au.name as term_authority, au.uri as term_authority_uri
+      from term t 
+      inner join domain d
+      on t.id=td.term
+      inner join term_domain td
+      on td.domain=d.id
+      inner join authority au
+      on t.authority = au.id
+      where d.id = ? and
+            t.term like ?
+Q
+  term_info_by_id => <<Q,
+  select term, term_id, concept_code,
+    domain_name, domain_id, domain_code,
+    term_authority, term_authority_uri,
+    a.name as domain_authority, a.uri as domain_authority_uri from 
+    (select t.term as term, t.id as term_id, t.concept_code as concept_code,
+      au.name as term_authority, au.uri as term_authority_uri,
+      d.name as domain_name,
+      d.id as domain_id,
+      d.authority as d_auth_id, d.domain_code as domain_code
+      from term t 
+      inner join domain d
+      on t.id=td.term
+      inner join term_domain td
+      on td.domain=d.id
+      inner join authority au
+      on t.authority = au.id
+      where t.id = ?) ti
+    inner join authority a
+      on ti.d_auth_id = a.id
+Q
+  domain_info_by_id => <<Q,
+  select d.name as domain_name,d.id as domain_id, domain_code,
+    au.name as domain_authority, au.uri as domain_authority_uri
+    from domain d 
+    inner join authority au
+    on d.authority = au.id
     where d.id = ?
 Q
-  search => <<Q,
-  select d.name as domain, t.*
-  from term t inner join term_domain td
-  on t.id=td.term
-  inner join domain d
-  on td.domain=d.id
-  where d.id = ? and
-        t.term like ?
+  domain_info_by_name => <<Q,
+  select d.name as domain_name,d.id as domain_id, domain_code,
+    au.name as domain_authority, au.uri as domain_authority_uri
+    from domain d 
+    inner join authority au
+    on d.authority = au.id
+    where d.name = ?
 Q
-  domain_by_id => <<Q,
-  select d.* 
-  from domain as d 
-  where d.id = ?
-Q
-  domain_by_name => <<Q,
-  select d.* 
-  from domain as d 
-  where d.name = ?
-Q
-  
  );
 # This method will run once at server start
 sub startup {
@@ -83,12 +117,9 @@ sub setup_db_intf {
   }
   $self->helper( validate_sth => sub { $sth{validate} } );
   $self->helper( list_sth => sub { $sth{list} } );
-  $self->helper( search_sth => sub { $sth{search} } );
-  $self->helper( domain_by_id_sth => sub { $sth{domain_by_id} } );
-  $self->helper( domain_by_name_sth => sub { $sth{domain_by_name} } );
-  
-
-
+  $self->helper( search_terms_sth => sub { $sth{search_terms} } );
+  $self->helper( domain_info_by_id_sth => sub { $sth{domain_info_by_id} } );
+  $self->helper( domain_info_by_name_sth => sub { $sth{domain_info_by_name} } );  $self->helper( term_info_by_id_sth => sub { $sth{term_info_by_id} } );  
   1;
 }
 1;
