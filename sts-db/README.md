@@ -32,17 +32,21 @@ Outline of RDBMS tables necessary for an STS prototype, based on [the spec](../R
 | ------ | ---- | ---- |
 | id | standardized term id | text, non-null, unique (PK) |
 | term | the term as string | text, non-null |
-| concept\_code | external concept code mapped to this term | text, null |
-| authority | FK to `authority` - the source of the concept code | fk(authority.id), null |
 
 ## Term-Domain table
 
-`term_domain` associates terms with domains. The domain contents are specified in this table.
+`term_domain` associates terms with domains, and assigns "the
+semantics" (in the form of an [NCIt](https://ncit.nci.nih.gov) concept
+code) to the term in the context of the given domain. The domain
+contents are specified in this table.
 
 | column | desc | attr |
 | ------ | ---- | ---- |
+| id | integer sequential primary key | integer, non-null, unique (PK) |
 | domain\_id | domain id | fk(domain.id), non-null |
 | term\_id | term id | fk(term.id), non-null |
+| concept\_code | external concept code mapped to this term in domain context | text, null |
+| authority | FK to `authority` - the source of the concept code | fk(authority.id), null |
 
 ## Property-domain table
 
@@ -93,3 +97,4 @@ Outline of RDBMS tables necessary for an STS prototype, based on [the spec](../R
         where d.name = :domain_name: and
           t.term like :term_search:
 
+* Also, see queries used in [sts.pm](../sts/lib/sts.pm)
