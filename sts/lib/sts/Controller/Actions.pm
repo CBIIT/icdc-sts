@@ -96,7 +96,15 @@ sub list {
 
 sub check_domain {
   my $self = shift;
-  my $dom = $self->stash('domain_id');
+  my $dom;
+  if ($self->stash('prop_name')) {
+    my $prop = $self->stash('prop_name');
+    $self->app->log->debug("$prop is the property domain");
+    $self->domain_id_by_prop_sth->execute($prop);
+    my $r = $self->domain_id_by_prop_sth->fetchrow_hashref;
+    $dom = $r->{domain} if $r;
+  }
+  $dom //= $self->stash('domain_id');
   return unless $dom;
   my ($r, $sth);
   for ($self->domain_info_by_id_sth, $self->domain_info_by_name_sth) {
@@ -105,12 +113,8 @@ sub check_domain {
     $r = $sth->fetchrow_hashref;
     last if ($r);
   }
-  if ($r) {
-    return $r
-  }
-  else {
-    return;
-  }
+  return $r if $r;
+  return;
 }
 
 sub term_domain_payload {
