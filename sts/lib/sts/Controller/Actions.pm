@@ -29,7 +29,8 @@ sub validate {
     $self->term_info_by_id_sth->execute($valid->{term_id});
     my $terminfo = $self->term_info_by_id_sth->fetchrow_hashref;
 ;
-    $self->render( json => term_domain_payload($terminfo) );
+    $self->render( json => { term => term_payload($terminfo),
+                            domain => domain_payload($domain) });
   }
   else {
     $self->render( json => { errmsg => "term not valid for the domain" },
@@ -94,6 +95,20 @@ sub list {
   $self->render(json => { terms => \@ret, domain => domain_payload($domain) });
 }
 
+sub domain_list {
+  my $self = shift;
+  my @ret;
+  $self->domain_list_sth->execute();
+  while (my $r = $self->domain_list_sth->fetchrow_hashref) {
+    push @ret, { property => $r->{property}, domain_name => $r->{domain_name},
+                 domain_id => $r->{domain_id} };
+  }
+  unless (@ret) {
+    $self->render( json => {errmsg => "No domains in server!"}, status => 500 );
+  }
+  $self->render( json => \@ret );
+}
+
 sub check_domain {
   my $self = shift;
   my $dom;
@@ -104,7 +119,7 @@ sub check_domain {
     my $r = $self->domain_id_by_prop_sth->fetchrow_hashref;
     $dom = $r->{domain} if $r;
   }
-  $dom //= $self->stash('domain_id');
+  $dom //= $self->stash('domain_id') // $self->stash('dom_name');
   return unless $dom;
   my ($r, $sth);
   for ($self->domain_info_by_id_sth, $self->domain_info_by_name_sth) {
@@ -115,14 +130,6 @@ sub check_domain {
   }
   return $r if $r;
   return;
-}
-
-sub term_domain_payload {
-  my ($terminfo) = @_;
-  return {
-    term => term_payload($terminfo),
-    domain => domain_payload($terminfo),
-   };
 }
 
 sub term_payload {
