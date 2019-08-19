@@ -97,4 +97,4 @@ contents are specified in this table.
         where d.name = :domain_name: and
           t.term like :term_search:
 
-* Also, see queries used in [sts.pm](../sts/lib/sts.pm)
+* Also, see queries used in [sts](../sts/lib/sts/queries.pm)
