@@ -16,16 +16,17 @@ domain of a property defined in the [model description files]().
 
 The STS endpoints have three components: \<domain\>, \<action\> and \<query\>
 
-    https://example/<domain>/<action>?<query>
+    https://localhost:3000/<domain>/<action>?<query>
 
 * Domain
 
-The \<domain\> can either be the STS domain identifier, or it can
-reference the model _property_ (as defined in the [MDF](mdflink) whose
-value domain is required:
+The \<domain\> can either be the STS domain identifier, can reference
+the domain name, or it can reference the model _property_ (as defined
+in the [MDF](mdflink) whose value domain is required:
 
-    https://example/stsdom:102384/<...>
-    https://example/domain/disease/<...>
+    https://localhost:3000/67/<...>
+    https://localhost:3000/domain/Gynecologic Tumor Grouping Cervical Endometrial FIGO 2009 Stage/<...>
+    https://localhost:3000/property/figo_stage/<...>
 
 If the domain is provided with no following action, STS will return
 the domain description in JSON format with status 200. If the domain
@@ -35,7 +36,7 @@ does not exist, STS responds with status 400 (Bad Request).
 
     * Validate
 
-            https://example/domain/disease/validate?q="Acute Lymphocytic Lymphoma"
+            https://localhost:3000/domain/ICD-O Primary Disease Diagnosis Type/validate?q=Acute lymphocytic leukemia
 
 If the term in the query field exists in the domain, STS returns the
 term record in JSON format with status 200.  If the term does not
@@ -44,14 +45,14 @@ exist, STS returns 400 (Bad Request).
 
    * Search
 
-            https://example/domain/disease/search?q="*Breast*"
+            https://localhost:3000/property/primary_site/search?q=%Breast%
 
 The query field is a search string. STS returns matching term records
 as an array in JSON format with status 200.
 
    * List
 
-            https://example/domain/disease/list
+            https://localhost:3000/property/adverse_event/list
 
 No query field present. STS returns all term records contained in the
 referenced domain as an array in JSON format with status 200, or
@@ -64,7 +65,7 @@ Each value domain is a set of records that possess a single identifier. These re
 
      { "term" : <a term>,
        "term_id" : <a unique id for the term>,
-       "concept_code" : <a concept code for the term from the code_authority>,
+       "concept_code" : <a concept code for the term in the domain context, from the code_authority>,
        "code_authority" : {
          "authority_name": <resource from which code was obtained>,
          "authority_uri": <link to authority>,
@@ -81,22 +82,49 @@ each referring to a different disease staging system.
 
 A value domain itself has the following structure:
 
-    { "domain_name": <an optional human-readable name>,
-      "domain_id": <a unique id for the domain>,
-      "domain_code": <a code for the domain as such from the domain_authority>,
-       "domain_authority" : {
-         "authority_name": <the name or id of any external authority that has compiled this domain>,
-         "authority_uri": <link to authority>,
-         "domain_uri": <link to code at authority>
-       }
-      "members" : [ <term_id>, <term_id>, ... ] }
+    { "domain" :
+      { "domain_name": <an optional human-readable name>,
+          "domain_id": <a unique id for the domain>,
+          "domain_code": <a code for the domain as such from the domain_authority>,
+          "domain_authority" : {
+             "authority_name": <the name or id of any external authority that has compiled this domain>,
+             "authority_uri": <link to authority>,
+             "domain_uri": <link to code at authority>
+           }
+      "terms" : [
+        <term>,
+        <term>,
+        ... ]
     }
 
-This structure may be implemented in any database. Maintenance of this database (adding domains, adding terms to domains, changing term and domain properties, updating database representations of external value domains) is a separate set of technical tasks and processes. These are described [here (TBD)](TBD).
+This structure may be implemented in any database. Maintenance of this database (adding domains, adding terms to domains, changing term and domain properties, updating database representations of external value domains) is a separate set of technical tasks and processes.
 
 The identifiers for terms and domains are unique within the system. They should have a standardized format, and be recognizable to humans as a STS identifier.
 
-Codes are not required. If either concept or domain codes are present in a record, the corresponding authority property must also be present.
+## Concept Codes
+
+Concept codes are not required to run the prototype. They are,
+however, critical for semantic purposes. For example, multiple disease
+staging systems exist for describing cancer progression. Almost all of
+them use the term "Stage I", therefore it is critical that the
+appropriate concept code travel with the amibiguous term "Stage I", so
+that the meaning of the term in the correct domain context is
+understood by the data consumer. In the prototype,
+
+for:
+
+    https://localhost:3000/property/figo_stage/validate?q=Stage I
+
+the `concept_code` returned is
+[C96244](https://ncit.nci.nih.gov/ncitbrowser/ConceptReport.jsp?dictionary=NCI_Thesaurus&ns=ncit&code=C96244).
+
+and for 
+
+    https://localhost:3000/property/ajcc_clinical_stage/validate?q=Stage I
+
+the `concept_code` is [C27966](https://ncit.nci.nih.gov/ncitbrowser/ConceptReport.jsp?dictionary=NCI_Thesaurus&ns=ncit&code=C27966)
+   
+If either concept or domain codes are present in a record, the corresponding authority property must also be present.
 
 The code authority should generally be the [NCI Thesaurus](https://ncit.nci.nih.gov), and concept codes should be valid codes from that resource.
 

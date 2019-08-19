@@ -27,7 +27,7 @@ sub startup {
   $r->get('/property/:prop_name')->to('actions#domain');
   $r->get('/property/:prop_name/list')->to('actions#list');
   $r->get('/property/:prop_name/validate')->to('actions#validate');
-  $r->get('/property/:prop_name/:term/search')->to('actions#search');
+  $r->get('/property/:prop_name/search')->to('actions#search');
   $r->get('/domain/:dom_name')->to('actions#domain');
   $r->get('/domain/:dom_name/list')->to('actions#list');
   $r->get('/domain/:dom_name/validate')->to('actions#validate');

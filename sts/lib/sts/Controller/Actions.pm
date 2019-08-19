@@ -23,13 +23,11 @@ sub validate {
                   status => 400);
     return;
   }
-  $self->validate_sth->execute($self->param('q'),$domain->{domain_id});
+  $self->validate_sth->execute($domain->{domain_id},$self->param('q'));
   my $valid = $self->validate_sth->fetchrow_hashref;
+
   if ($valid) {
-    $self->term_info_by_id_sth->execute($valid->{term_id});
-    my $terminfo = $self->term_info_by_id_sth->fetchrow_hashref;
-;
-    $self->render( json => { term => term_payload($terminfo),
+    $self->render( json => { term => term_payload($valid),
                             domain => domain_payload($domain) });
   }
   else {
@@ -61,7 +59,7 @@ sub search {
     $self->render(json => { terms => \@ret, domain => domain_payload($domain) } );
   }
   else {
-    $self->render(json => { errmsg => "No hits for '".$self->param('q')."' in domain '".$domain->{name}."'", status => 400 });
+    $self->render(json => { errmsg => "No hits for '".$self->param('q')."' in domain '".$domain->{domain_name}."'", status => 400 });
   }
 
 }
