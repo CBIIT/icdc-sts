@@ -10,7 +10,7 @@ of terms that comprise a value domain is treated as an addressable
 unit, with its own identifier.
 
 The STS is model aware. Validation queries can address the value
-domain of a property defined in the [model description files](icdc-model-tool).
+domain of a property defined in the [model description files](https://github.com/CBIIT/icdc-model-tool/tree/master/model-desc).
 
 ## Endpoints
 
