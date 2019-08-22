@@ -22,7 +22,7 @@ The STS endpoints have three components: \<domain\>, \<action\> and \<query\>
 
 The \<domain\> can either be the STS domain identifier, can reference
 the domain name, or it can reference the model _property_ (as defined
-in the [MDF](mdflink) whose value domain is required:
+in the [MDF](https://github.com/CBIIT/icdc-model-tool/tree/master/model-desc) whose value domain is required:
 
     https://localhost:3000/67/<...>
     https://localhost:3000/domain/Gynecologic Tumor Grouping Cervical Endometrial FIGO 2009 Stage/<...>
