@@ -137,7 +137,7 @@ To run STS locally on your machine, first start the hypnotoad server then point 
 ### Option A: with Carton
 This requires the perl module `Carton` be installed. Notes are included below on installing the `Carton` module. Note that this allows the user to launch from any directory, not just the icdc-sts directory; simply modify the corresponding path to sts/script/sts file accordingly.
 
-1. On your machine, run the following command to tell it use the perl modules under local/
+1. On your machine, run the following command to tell it to install the required perl modules in cpanfile under local/
 
     >$ carton install
 
@@ -157,13 +157,21 @@ or if you have cpanm installed:
 
     >$ cpanm Carton
 
-### Option B: Just point perl to look in `local/` folder 
-Simply launch as follows:
+### Option B: Invoke with perl to look in `local/` folder (if modules installed with Carton) or other location (e.g. using local::lib) where modules are installed
+Simply launch as usual with hypnotoad. If using local::lib, simply change the path accordingly.
+Assuming you are in `icdc-sts` directory:
 
     >$ perl -Ilocal/lib/perl5 -Ilocal/bin/hypnotoad -f sts/script/sts
 
 or
+
     >$ PERL5LIB=/path/to/icdc-sts/local/lib/perl5 /path/to/icdc-sts/local/bin/hypnotoad -f /path/to/icdc-sts/sts/script/sts
+
+or
+
+    >$ hynotoad -f script/sts
+
+Note that the third case is assuming that you are in the `icdc-sts/sts` directory, and the earlier two assume you are in the `icdc-sts` directory. You can launch from any directory when the correct paths are used. 
 
 ### Option C: Use Docker
 Simply run the docker image:
