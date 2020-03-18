@@ -1,4 +1,5 @@
 package sts;
+use version; our $VERSION = '0.1.1';
 use Mojo::Base 'Mojolicious';
 use DBI;
 use sts::queries;
