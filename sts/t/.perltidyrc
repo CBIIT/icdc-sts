@@ -1,0 +1,20 @@
+##      t/.perltidyrc
+
+# These two parameters alter the file in place, without creating a backup
+-b
+-bext='/'
+
+# Set line length to 99
+-l=99
+
+# Indent 4 spaces
+-i=4
+
+# Cuddled else ( } else { )
+-ce
+
+# Sub-blocks of code, like methods, should have a newline
+-sbl
+
+# No space before semi-colon in for loop
+-nsfs

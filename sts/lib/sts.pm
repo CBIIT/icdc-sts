@@ -1,7 +1,9 @@
 package sts;
+use version; our $VERSION = '0.1.1';
 use Mojo::Base 'Mojolicious';
 use DBI;
 use sts::queries;
+use strict;
 
 # This method will run once at server start
 sub startup {
@@ -36,7 +38,10 @@ sub startup {
   # setup db interface
   setup_db_intf($self);
   $self->log->debug("Ready");
+
+
 }
+
 
 sub setup_db_intf {
   my ($self) = @_;

@@ -1,26 +1,45 @@
 package sts::queries;
 use base Exporter;
+use strict;
 our @EXPORT;
 
 @EXPORT=qw/%stmts/;
 
 our %stmts = (
   validate => <<Q,
-    select domain, domain_id, term, term_id, concept_code, au.name as term_authority, au.uri as term_authority_uri
-    from
-    (select d.name as domain, d.id as domain_id, t.term as term, t.id as term_id,
-    cc.concept_code as concept_code, cc.concept_authority as authority from 
-    (select td.domain as d_id, td.term as t_id,
-    td.concept_code as concept_code, td.concept_authority as concept_authority
-    from term_domain td
-    where td.domain = ? and
-       td.term = (select t.id as term_id from term t where t.term = ?)) cc
-    inner join term t
-    on t.id = cc.t_id
-    inner join domain d
-    on d.id = cc.d_id) cctd
-    inner join authority as au
-    on cctd.authority = au.id
+    SELECT domain
+    	  ,domain_id
+	  ,term
+	  ,term_id
+	  ,concept_code
+	  ,au.name as term_authority
+	  ,au.uri as term_authority_uri
+    FROM
+       ( SELECT d.name as domain
+       	       ,d.id as domain_id
+	       ,t.term as term
+               ,t.id as term_id
+	       ,cc.concept_code as concept_code
+	       ,cc.concept_authority as authority 
+	 FROM
+    	      ( SELECT td.domain as d_id
+	              ,td.term as t_id
+		      ,td.concept_code as concept_code
+		      ,td.concept_authority as concept_authority
+    		FROM term_domain td
+    		WHERE td.domain = ? 
+		AND td.term = 
+		 	( SELECT t.id as term_id 
+			  FROM term t 
+			  WHERE t.term = ? )
+              ) cc
+    	 INNER JOIN term t
+    	 ON t.id = cc.t_id
+    	 INNER JOIN domain d
+	 ON d.id = cc.d_id
+       ) cctd
+    INNER JOIN authority as au
+    ON cctd.authority = au.id
 Q
   list => <<Q,
   select t.term as term, t.id as term_id, td.concept_code as concept_code,
