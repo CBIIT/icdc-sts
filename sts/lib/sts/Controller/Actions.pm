@@ -13,7 +13,31 @@ sub ack {
 sub validate {
   my $self = shift;
   unless ($self->param('q')) {
+    $sub validate {
+  my $self = shift;
+  unless ($self->param('q')) {
     $self->render( json => { errmsg => "Query parameter 'q' required" },
+                   status => 400);
+    return;
+  }
+  my $domain = $self->check_domain;
+  unless ($domain) {
+    $self->render(json => { errmsg => "Missing or non-existent domain"},
+                  status => 400);
+    return;
+  }
+  $self->validate_sth->execute($domain->{domain_id},$self->param('q'));
+  my $valid = $self->validate_sth->fetchrow_hashref;
+
+  if ($valid) {
+    $self->render( json => { term => term_payload($valid),
+                            domain => domain_payload($domain) });
+  }
+  else {
+    $self->render( json => { errmsg => "term not valid for the domain" },
+                   status => 400 );
+  }
+}self->render( json => { errmsg => "Query parameter 'q' required" },
                    status => 400);
     return;
   }
@@ -123,6 +147,30 @@ sub check_domain {
   for ($self->domain_info_by_id_sth, $self->domain_info_by_name_sth) {
     $sth=$_;
     $sth->execute($dom);
+    $r = $sth->fetchrow_hashref;
+    last if ($r);
+  }
+  return $r if $r;
+  return;
+}
+
+
+sub check_value_set {
+  my $self = shift;
+  my $vs;
+  if ($self->stash('prop_name')) {
+    my $prop = $self->stash('prop_name');
+    $self->app->log->debug("$prop is the property value set");
+    $self->value_set_id_by_prop_sth->execute($prop);
+    my $r = $self->value_set_id_by_prop_sth->fetchrow_hashref;
+    $dom = $r->{value_set} if $r;
+  }
+  $dom //= $self->stash('value_set_id') // $self->stash('vs_name');
+  return unless $vs;
+  my ($r, $sth);
+  for ($self->value_set_info_by_id_sth, $self->value_set_info_by_name_sth) {
+    $sth=$_;
+    $sth->execute($vs);
     $r = $sth->fetchrow_hashref;
     last if ($r);
   }
