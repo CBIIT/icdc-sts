@@ -80,19 +80,6 @@ sub query_mdb {
 
 
 
-sub connect_sqlite_db {
-  my ($self) = @_;
-  my $dbh = DBI->connect("dbi:SQLite:dbname=".$self->config->{sts_db});
-  die "AGGGH database is unavailable" unless $dbh->ping;
-  $dbh->{RaiseError} = 1;
-  my %sth;
-  # auto create helper functions for statement handles for each
-  # query in sts::queries
-  for my $stmt (keys %stmts) {
-    $sth{$stmt} = $dbh->prepare($stmts{$stmt});
-    eval "\$self->helper( ${stmt}_sth => sub { \$sth{$stmt} } );";
-  }
-}
 
 1;
 

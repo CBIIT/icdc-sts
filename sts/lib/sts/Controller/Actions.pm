@@ -10,34 +10,57 @@ sub ack {
   $self->render( json => $ack );
 }
 
+sub healthcheck { 
+  my $self = shift;
+  my $health = {'healthcheck' => 'ok'};
+  $self->render( json => $health );
+}
+
+sub connectcheck {
+  my $self = shift;
+  my $stream = $self->connectcheck_sth;
+
+  my @names = $stream->field_names;
+  my $size = scalar @names;
+  #print scalar (@names);
+  #$self->render( json => { $names[0] } );
+  
+  my $connectcheckstatus = {'connectcheck' => $size };
+  $self->render( json => $connectcheckstatus );
+
+}
+sub connect{
+  my $self = shift;
+  my $stream = $self->connect_sth;
+
+  my $connectstatus = {'connect' => $stream};
+  $self->render( json => $connectstatus );
+}
+
+sub alpha{
+  my $self = shift;
+  my $stream = $self->alpha_sth;
+
+  ## get data and handle empty/null values
+  my @data = ();
+    while ( my @row = $stream->fetch_next ) {
+        my @cleaned = ();
+        foreach my $j (@row){
+                $j = $j || 'NULL';
+                push @cleaned, $j;
+        }
+        push @data, \@cleaned;
+    }
+
+  my $alpha_answer = {'alpha' => $data[0] };
+  $self->render( json => $alpha_answer );
+
+}
+
 sub validate {
   my $self = shift;
   unless ($self->param('q')) {
-    $sub validate {
-  my $self = shift;
-  unless ($self->param('q')) {
     $self->render( json => { errmsg => "Query parameter 'q' required" },
-                   status => 400);
-    return;
-  }
-  my $domain = $self->check_domain;
-  unless ($domain) {
-    $self->render(json => { errmsg => "Missing or non-existent domain"},
-                  status => 400);
-    return;
-  }
-  $self->validate_sth->execute($domain->{domain_id},$self->param('q'));
-  my $valid = $self->validate_sth->fetchrow_hashref;
-
-  if ($valid) {
-    $self->render( json => { term => term_payload($valid),
-                            domain => domain_payload($domain) });
-  }
-  else {
-    $self->render( json => { errmsg => "term not valid for the domain" },
-                   status => 400 );
-  }
-}self->render( json => { errmsg => "Query parameter 'q' required" },
                    status => 400);
     return;
   }
@@ -131,6 +154,26 @@ sub domain_list {
   $self->render( json => \@ret );
 }
 
+#-----------------
+# get a list of all property nodes and all of their 'properties'
+sub property_list {
+  my $self = shift;
+  my @ret;
+  $self->property_list_sth->execute();
+  while (my $r = $self->property_list_sth->fetchrow_hashref) {
+    push @ret, { handle => $r->{handle},
+                 value_domain => $r->{value_domain},
+                 model => $r->{model},
+                 is_required => $r->{is_required} };
+  }
+  unless (@ret) {
+    $self->render( json => {errmsg => "No domains in server!"}, status => 500 );
+  }
+  $self->render( json => \@ret );
+}
+
+# ----------------
+
 sub check_domain {
   my $self = shift;
   my $dom;
@@ -147,30 +190,6 @@ sub check_domain {
   for ($self->domain_info_by_id_sth, $self->domain_info_by_name_sth) {
     $sth=$_;
     $sth->execute($dom);
-    $r = $sth->fetchrow_hashref;
-    last if ($r);
-  }
-  return $r if $r;
-  return;
-}
-
-
-sub check_value_set {
-  my $self = shift;
-  my $vs;
-  if ($self->stash('prop_name')) {
-    my $prop = $self->stash('prop_name');
-    $self->app->log->debug("$prop is the property value set");
-    $self->value_set_id_by_prop_sth->execute($prop);
-    my $r = $self->value_set_id_by_prop_sth->fetchrow_hashref;
-    $dom = $r->{value_set} if $r;
-  }
-  $dom //= $self->stash('value_set_id') // $self->stash('vs_name');
-  return unless $vs;
-  my ($r, $sth);
-  for ($self->value_set_info_by_id_sth, $self->value_set_info_by_name_sth) {
-    $sth=$_;
-    $sth->execute($vs);
     $r = $sth->fetchrow_hashref;
     last if ($r);
   }

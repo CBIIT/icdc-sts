@@ -118,14 +118,24 @@ Q
   RETURN DISTINCT v.id, p.handle
 
 Q
-  value_set_list => <<Q,
 
+  property_list => <<Q,
+
+  MATCH (p:property) 
+  RETURN DISTINCT 
+    p.handle
+   ,p.value_domain
+   ,p.model
+   ,p.is_required;
+Q
+  
+  value_set_list => <<Q,
   MATCH (p:property {value_domain:"enum"}) -[:has_value_set]->(v:value_set)
   RETURN DISTINCT v.id as value_set_id
                  ,p.handle as property
 		 ,v.id as value_set_name
-
 Q
+  
   list => <<Q,
 
   MATCH (p:property {value_domain:"enum"}) -[:has_value_set]->(v:value_set) 
