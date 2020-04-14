@@ -1,0 +1,53 @@
+{
+   "property":{
+      "handle":"sex",
+      "model":"ICDC",
+      "value_domain":"enum",
+      "is_required":null
+   },
+   "value_set":{
+      "id":"ad5cf6fd-914e-4c31-abbb-79f9373d4066",
+      "url":null
+   },
+   "concepts":[
+      {
+         "concept":{
+            "id":"e6178c9e-e2e2-4bfa-9ab0-305063c886f3"
+         },
+         "terms":[
+            {
+               "term":{
+                  "value":"BiologicEntity.sexGenotypeCode",
+                  "id":null,
+                  "origin_definition":"A coded value specifying the sex of a biologic entity based upon the characterization of the biologic entity&#39;s genes",
+                  "origin_id":"EAID_A962895C_2060_4fa7_83BF_294FBC95D794"
+               }
+            }
+         ]
+      },
+      {
+         "concept":{
+            "id":"8f0221d5-d7d5-4641-8667-ee5eaa3f0743"
+         },
+         "terms":[
+            {
+               "term":{
+                  "value":"Sex",
+                  "id":"65149478-7077-421a-aec9-fa4d63494a2a",
+                  "origin_definition":"The assemblage of physical properties or qualities by which male is distinguished from female; the physical difference between male and female; the distinguishing peculiarity of male or female.",
+                  "origin_id":"C28421"
+               }
+            },
+            {
+               "term":{
+                  "value":"sex",
+                  "id":"a50bf070-2192-4b63-80d9-ca3c98c01881",
+                  "origin_definition":null,
+                  "origin_id":null
+               }
+            }
+         ]
+      }
+   ],
+   "property-of-node":"demographic"
+}
