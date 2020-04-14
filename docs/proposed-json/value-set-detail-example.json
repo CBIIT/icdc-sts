@@ -1,0 +1,36 @@
+[
+  {
+    "value_set":{
+      "id": "9009b2d6-90f9-465e-b2aa-5ff61682c13f",
+      "url": "http://localhost/terms/domain/agent_name"
+    },
+    "property-handle": "ae_agent_name",
+    "property-model": "ICDC"
+  },
+  {
+    "value_set": {
+      "id": "ad5cf6fd-914e-4c31-abbb-79f9373d4066",
+      "url": null
+    },
+    "property-handle": "sex",
+    "property-model": "ICDC",
+    "terms":[
+      {
+        "id": "cea0ebd8-a874-4cf5-b456-1f4aff66b4a4",
+        "value": "F"
+      },
+      {
+        "id": "bab625e6-b1c3-41b9-b949-de37cfaa2973",
+        "value": "M"
+      }
+    ]
+  },
+  {
+    "value_set": {
+      "id": "5a399199-113c-478e-9ff0-538c5d5fc0d6",
+      "url": "http://localhost/terms/domain/respiration_pattern"
+    },
+    "property-handle": "respiration_pattern",
+    "property-model": "ICDC"
+  }
+]

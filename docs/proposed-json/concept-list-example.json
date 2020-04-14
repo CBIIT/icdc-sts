@@ -1,0 +1,48 @@
+[
+   {
+      "concept":{
+         "id":"aaeeeae2-0935-4a36-8e4a-b5de676375f5"
+      },
+      "terms":[
+         {
+            "term":"study_site"
+         }
+      ]
+   },
+   {
+      "concept":{
+         "id":"644596ae-b935-40e6-846c-7bc510d3dd4b"
+      },
+      "terms":[
+         {
+            "term":"of_study_arm"
+         }
+      ]
+   },
+   {
+      "concept":{
+         "id":"5bbae16-9ceb-4970-94ca-9f2ae62bf722"
+      },
+      "terms":[
+         {
+            "term":"Adverse Event Attributed to Commercial Product"
+         },
+         {
+            "term":"attribution_to_commercial"
+         }
+      ]
+   },
+   {
+      "concept":{
+         "id":"91b10801-3eb6-46e8-87f6-e88b35884d04"
+      },
+      "terms":[
+         {
+            "term":"Adverse Event Attributed to Investigational New Drug"
+         },
+         {
+            "term":"attribution_to_ind"
+         }
+      ]
+   }
+]
