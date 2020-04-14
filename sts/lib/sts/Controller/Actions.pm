@@ -1,6 +1,7 @@
 package sts::Controller::Actions;
 use Mojo::Base 'Mojolicious::Controller';
 
+
 sub ack {
   my $self = shift;
   my $ack = {
@@ -10,26 +11,69 @@ sub ack {
   $self->render( json => $ack );
 }
 
-sub healthcheck { 
-  my $self = shift;
-  my $health = {'healthcheck' => 'ok'};
-  $self->render( json => $health );
-}
 
-sub connectcheck {
+sub healthcheck {
   my $self = shift;
-  my $stream = $self->connectcheck_sth;
+  my $stream = $self->get_database_version_sth;
 
+  # don't need to look at actual data, just check
+  # if expected headers were returned
+  my $health_status = 'unknown';
   my @names = $stream->field_names;
-  my $size = scalar @names;
-  #print scalar (@names);
-  #$self->render( json => { $names[0] } );
-  
-  my $connectcheckstatus = {'connectcheck' => $size };
-  $self->render( json => $connectcheckstatus );
+  if (
+    $names[0] eq 'name'
+    && $names[1] eq 'version'
+    && $names[2] eq 'edition'
+  ) {
+      $health_status = 'ok';
+  };
+
+  my $healthcheck_response = {'healthcheck' => $health_status };
+  $self->render( json => $healthcheck_response );
 
 }
-sub connect{
+
+
+sub node {
+  my $self = shift;
+
+  # returns node handle, model
+  my $stream = $self->get_nodes_sth;
+
+  my @raw_rows;
+  while ( my @row = $stream->fetch_next ) {
+      push @raw_rows, \@row;
+  }
+
+  # now format
+  my $nodes = {};
+  foreach my $row_ref (@raw_rows) {
+    my @row = @{$row_ref};
+      if ( exists ( $nodes->{$row[0]} ) ) {
+
+         my $m = $nodes->{$row[0]};
+         push @{$m->{'model'}}, $row[1];
+         $nodes->{$row[0]} = $m;
+
+      } else {
+        my $m = {};
+        $m->{'model'} = [ $row[1] ];
+        $nodes->{$row[0]} = $m;
+      }
+  }
+
+  my $answer = { 'query' => 'list all nodes ',
+              'status' => 'ok',
+              'data' => $nodes };
+
+  $self->render( json => $answer );
+
+}
+
+
+
+
+sub connectcheck{
   my $self = shift;
   my $stream = $self->connect_sth;
 
