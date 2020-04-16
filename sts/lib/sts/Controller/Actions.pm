@@ -2,6 +2,30 @@ package sts::Controller::Actions;
 use Mojo::Base 'Mojolicious::Controller';
 
 
+############################################################
+=head1 NAME
+    sts::Controller::Actions
+
+=head1 SYNOPSIS
+    functions used/called from Mojo routes in sts.pm
+
+=head2 subroutines/actions
+
+=over 12
+
+=item ack()
+
+DESCRIPTION:
+    ack() is the placeholder for the front homepage, tells sts version
+
+INPUT:  
+    nothing
+
+OUTPUT: 
+    { service => "STS", version => <sts_version> }
+
+=cut
+############################################################
 sub ack {
   my $self = shift;
   my $ack = {
@@ -12,94 +36,360 @@ sub ack {
 }
 
 
+############################################################
+=item healthcheck()
+
+DESCRIPTION:
+    The healthcheck() function is used to verify that the microservice is 
+    alive and functional. It does not check data, other than to see if
+    _something_ is there.
+
+INPUT:  
+    nothing
+
+OUTPUT: 
+    { MDB_CONNECTION => <ok|fail>, MDB_NODE_COUNT => <string> }
+
+    Reference to an anonymous hash with these keys
+            MDB_CONNECTION => 'ok' or 'fail'    # describes if the MDB db
+                                                # can be accessed and can be
+                                                # queried with version info
+                                                
+            MDB_NODE_COUNT => string            # counts all nodes in MDB 
+                                                # and while the actual result 
+                                                # doesn't really matter, just
+                                                # check that _some_ data
+                                                # exists
+
+=cut
+############################################################
 sub healthcheck {
   my $self = shift;
-  my $stream = $self->get_database_version_sth;
 
-  # don't need to look at actual data, just check
+  # ----------------------------------------------
+  # Part 1:
+  # See if the Meta database is up by querying the neo4j version
+  # we don't need to look at actual data, just check
   # if expected headers were returned
-  my $health_status = 'unknown';
+  
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  # $h is empty (no parameters is being passed)
+  my $h = {};
+  my $run_query_sref = $self->get_database_version_sref;
+  my $stream = $run_query_sref->($h);
+ 
+  # check returned version (in headers)
+  my $mdb_connection = 'fail';
   my @names = $stream->field_names;
   if (
     $names[0] eq 'name'
     && $names[1] eq 'version'
     && $names[2] eq 'edition'
   ) {
-      $health_status = 'ok';
+      $mdb_connection = 'ok';
   };
 
-  my $healthcheck_response = {'healthcheck' => $health_status };
+  # ----------------------------------------------
+  # Part 2:
+  # see if some data exists in MDB by simply counting nodes
+
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  $run_query_sref = $self->get_database_node_count_sref;
+  $stream = $run_query_sref->($h);
+
+  # count nodes
+  my $mdb_node_count;
+  while ( my @row = $stream->fetch_next ) {
+      $mdb_node_count = $row[0];
+  }
+
+  # ----------------------------------------------
+  # done - now return
+  my $healthcheck_response = {'MDB_CONNECTION' => $mdb_connection,
+                              'MDB_NODE_COUNT' => $mdb_node_count };
   $self->render( json => $healthcheck_response );
 
 }
 
 
-sub node {
+############################################################
+=item nodes()
+
+DESCRIPTION:
+    gets a list of nodes in MDB
+
+INPUT:  
+    nothing
+
+OUTPUT: 
+    json array of nodes, describing node.handle and node.model 
+    [  
+       {
+           "node":{
+              "handle":<node.handle>,
+              "model":"node.model"
+           }
+        },
+        ...
+    ]
+
+=cut
+############################################################
+sub nodes {
   my $self = shift;
 
-  # returns node handle, model
-  my $stream = $self->get_nodes_sth;
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  # $h is empty (no parameters is being passed)
+  my $h = {};
+  my $run_query_sref = $self->get_nodes_list_sref;
+  my $stream = $run_query_sref->($h);
 
-  my @raw_rows;
+  # now handle the query result
+  my $data = [];
   while ( my @row = $stream->fetch_next ) {
-      push @raw_rows, \@row;
+    # now format
+    my $n = { 'node' => { 'handle' => $row[0],
+                          'model'  => $row[1] } };
+    push @$data, $n;
   }
 
-  # now format
-  my $nodes = {};
-  foreach my $row_ref (@raw_rows) {
-    my @row = @{$row_ref};
-      if ( exists ( $nodes->{$row[0]} ) ) {
+  # done - now return
+  $self->render( json => $data );
+}
 
-         my $m = $nodes->{$row[0]};
-         push @{$m->{'model'}}, $row[1];
-         $nodes->{$row[0]} = $m;
 
-      } else {
-        my $m = {};
-        $m->{'model'} = [ $row[1] ];
-        $nodes->{$row[0]} = $m;
-      }
+
+############################################################
+=item properties()
+
+DESCRIPTION:
+    gets a list of properties in MDB, and their attributes
+
+INPUT:  
+    nothing
+
+OUTPUT: 
+    json array of properties, describing its attributes 
+    [
+       {
+          "property":{
+             "handle":<property.handle>,
+             "value_domain":<property.value_domain>,
+             "model":<property.model>,
+            "is_required":<property.is_required>
+          }
+      },
+      ...
+    ]
+
+=cut
+############################################################
+sub properties {
+  my $self = shift;
+
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  # $h is empty (no parameters is being passed)
+  my $h = {};
+  my $run_query_sref = $self->get_properties_list_sref;
+  my $stream = $run_query_sref->($h);
+
+  # handle query result data
+  my $data = [];
+  while ( my @row = $stream->fetch_next ) {
+    
+    # now format
+    my $p = { 'property' => { 'handle'       => $row[0],
+                              'value_domain' => $row[1],
+                              'model'        => $row[2],
+                              'is_required'  => $row[3] } };
+    
+    push @$data, $p;
   }
 
-  my $answer = { 'query' => 'list all nodes ',
-              'status' => 'ok',
-              'data' => $nodes };
-
-  $self->render( json => $answer );
-
+  # done - now return
+  $self->render( json => $data );
 }
 
 
 
+############################################################
+=item value_sets()
 
-sub connectcheck{
+DESCRIPTION:
+    gets a list of value sets in MDB
+
+INPUT:  
+    nothing
+
+OUTPUT: 
+    json array of value sets, describing value set attributes
+    and the property to which the value set belongs
+    [  
+       {
+           "value_set":{
+              "id":<value_set.id>,
+              "url":<value_set.url>
+           },
+           "property-handle":<property.handle>
+        },
+        ...
+    ]
+
+=cut
+############################################################
+sub value_sets {
   my $self = shift;
-  my $stream = $self->connect_sth;
 
-  my $connectstatus = {'connect' => $stream};
-  $self->render( json => $connectstatus );
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  # $h is empty (no parameters is being passed)
+  my $h = {};
+  my $run_query_sref = $self->get_value_sets_list_sref;
+  my $stream = $run_query_sref->($h);
+
+  # handle returned data
+  my $data = [];
+  while ( my @row = $stream->fetch_next ) {
+    # now format
+    my $vs = { 'value_set' => { 'id'  => $row[1],
+                                'url' => $row[2] },
+               'property-handle' => $row[0] };
+    
+    push @$data, $vs;
+  }
+
+  # done - now return
+  $self->render( json => $data );
 }
 
-sub alpha{
+
+
+############################################################
+=item terms()
+
+DESCRIPTION:
+    gets a list of value sets in MDB
+
+INPUT:  
+    nothing
+
+OUTPUT: 
+    json array of value sets, describing value set attributes
+    and the property to which the value set belongs
+    [  
+       {
+           "value_set":{
+              "id":<value_set.id>,
+              "url":<value_set.url>
+           },
+           "property-handle":<property.handle>
+        },
+        ...
+    ]
+
+=cut
+############################################################
+sub terms {
   my $self = shift;
-  my $stream = $self->alpha_sth;
 
-  ## get data and handle empty/null values
-  my @data = ();
-    while ( my @row = $stream->fetch_next ) {
-        my @cleaned = ();
-        foreach my $j (@row){
-                $j = $j || 'NULL';
-                push @cleaned, $j;
-        }
-        push @data, \@cleaned;
-    }
+  $self->app->log->info("getting list of terms"); 
 
-  my $alpha_answer = {'alpha' => $data[0] };
-  $self->render( json => $alpha_answer );
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  # $h is empty (no parameters is being passed)
+  my $h = {};
+  my $run_query_sref = $self->get_terms_list_sref;
+  my $stream = $run_query_sref->($h);
 
+  # handle query result data
+  my $data = [];
+  while ( my @row = $stream->fetch_next ) {
+    # now format
+    my $t = { 'term' => { 'value'  => $row[0],
+                          'id'   => $row[1] },
+              'origin' => $row[2] };
+    
+    push @$data, $t;
+  }
+
+  # done, now return
+  $self->render( json => $data );
 }
+
+
+
+############################################################
+=item term()
+
+DESCRIPTION:
+    gets a details for a single term in MDB
+
+INPUT:  
+    :term
+
+OUTPUT: 
+    json array of value sets, describing value set attributes
+    and the property to which the value set belongs
+    [  
+       {
+           "value_set":{
+              "id":<value_set.id>,
+              "url":<value_set.url>
+           },
+           "property-handle":<property.handle>
+        },
+        ...
+    ]
+
+=cut
+############################################################
+sub term {
+  my $self = shift;
+
+  my $term = $self->stash('term');
+  $self->app->log->info("using term $term");
+
+  # just make sure we have term to proceed, else return error 400
+  unless ($term) {
+     $self->render(json => { errmsg => "Missing or non-existent term"},
+                   status => 400);
+     return;
+  }
+
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  my $h = { param => $term };
+
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  my $run_query_sref = $self->get_term_detail_sref;
+  my $stream = $run_query_sref->($h);
+
+  # capture data back from Neo4j::Bolt::ResultStream
+  my $data = [];
+  while ( my @row = $stream->fetch_next ) {
+    # now format
+    my $t = { 'term' => { 'value'  => $row[0],
+                          'id'   => $row[1] },
+              'term-origin' => $row[2] };
+    
+    push @$data, $t;
+  }
+
+  unless (scalar @$data) {
+     $self->render(json => { errmsg => "Missing or non-existent term"},
+                   status => 400);
+     return;
+  }
+
+  # now return result
+  $self->render( json => $data );
+}
+
+
+# ----------------------------------- #
+
 
 sub validate {
   my $self = shift;
@@ -267,5 +557,14 @@ sub domain_payload {
      }
    };
 }
+
+#######
+=back
+
+=cut
+#######
+
+
 1;
+
 

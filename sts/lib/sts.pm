@@ -22,10 +22,14 @@ sub startup {
     # Normal route to controller
     $r->get('/')->to('actions#ack');
     $r->get('/healthcheck')->to('actions#healthcheck');
+    #$r->get('/healthcheck2')->to('actions#healthcheck2');
     $r->get('/nodes')->to('actions#nodes');
     $r->get('/properties')->to('actions#properties');
     $r->get('/value_sets')->to('actions#value_sets');
-    #$r->get('/connect')->to('actions#connect');
+    $r->get('/value_sets/:value_set_id')->to('actions#value_set');
+    $r->get('/terms')->to('actions#terms');
+    $r->get('/terms/:term')->to('actions#term');
+    $r->get('/dune/:term')->to('actions#dune');
 
     # setup db interface
     setup_mdb_interface($self);
@@ -54,12 +58,15 @@ sub setup_mdb_interface {
     my $conn = $mdbh->connected;
     die "No connection to neo4j: " . $mdbh->errmsg unless $conn;
  
-    # construct queries for functions needed in routes above
-    # as specified in Actions.pm
+    # construct anonymouns subs for each queries as needed in routes above
     while ((my $queryname, my $cypherquery) = each (%queries)) { 
-        eval "\$self->helper( ${queryname}_sth => sub { \$mdbh->run_query( \$cypherquery, {} ) } )";
+        eval "\$self->helper( ${queryname}_sref => sub { 
+            return sub {
+                my (\$param_href) = \@_;
+                \$mdbh->run_query( \$cypherquery, \$param_href ) 
+            }
+        } )";
     }
-
 }
 
 1;
