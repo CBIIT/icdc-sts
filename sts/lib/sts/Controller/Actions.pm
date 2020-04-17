@@ -252,13 +252,55 @@ sub value_sets {
 
   # handle returned data
   my $data = [];
+  my %list_of_seen_vs = ();
   while ( my @row = $stream->fetch_next ) {
-    # now format
-    my $vs = { 'value_set' => { 'id'  => $row[1],
-                                'url' => $row[2] },
-               'property-handle' => $row[0] };
+
+    # see if we want terms handled
+    # need to see if the exist before we can test
+    my $terms_exist = -1;
+    if ( defined ($row[4]) || defined ($row[5]) ) {
+            $terms_exist = 1;
+    }else{
+        $terms_exist = 0;
+    }
+
+    # capture basic value_set data
+    my $vs = { 'value_set' => { 'id'  => $row[2],
+                                'url' => $row[3] },
+               'property-handle' => $row[0],
+               'property-model'  => $row[1] };
+    # only add the 'terms' if terms were found
+    if ($terms_exist){ 
+        $vs->{'terms'} = [];
+    }
+   
+    # check to see if this is a new value set or not
+    unless ( exists ($list_of_seen_vs{$row[2]})) {
+        push @$data, $vs;
+        $list_of_seen_vs{$row[2]} = 1;
+    }
+
+    # now only if there are terms, add them under the 'terms' array
+    # for the appropriate vs
+    if ($terms_exist) {
+        my $term_ = { 'term' => {'id' => $row[4], 'value' => $row[5]} };
+      
+        ## find which element in big data array has value set 
+        ## and add the term to it
+        my $id_ = $row[2];          # this is the current rows id
+        my $size = scalar (@$data); # how many rows in data it iterate over    
+        my $i = 0;
+        for (0..$size-1) {
+            if ( $data->[$i]->{'value_set'}->{'id'} eq $id_) {
+                # ah-ha, now I know which one to add to...
+                push @{$data->[$i]->{'terms'}}, $term_;
+                last; # all done, stop loop
+            }
+            $i++;
+        }
+    }
+
     
-    push @$data, $vs;
   }
 
   # done - now return
@@ -278,17 +320,28 @@ INPUT:
 OUTPUT: 
     json of a single value set, describing value set attributes
     and the property to which the value set belongs
-    [  
-       {
-           "value_set":{
-              "id":<value_set.id>,
-              "url":<value_set.url>
-           },
-           "property-handle":<property.handle>
-        },
-        ...
-    ]
-
+    {
+        "property-handle": "sex",
+        "property-model": "ICDC",
+        "terms": [
+            {
+                "term": {
+                    "id": "cea0ebd8-a874-4cf5-b456-1f4aff66b4a4",
+                    "value": "F"
+                }
+            },
+            {
+                "term": {
+                    "id": "bab625e6-b1c3-41b9-b949-de37cfaa2973",
+                    "value": "M"
+                }
+            }
+        ],
+        "value_set": {
+            "id": "ad5cf6fd-914e-4c31-abbb-79f9373d4066",
+            "url": null
+        }
+    }
 =cut
 ############################################################
 sub value_set {
@@ -332,7 +385,9 @@ sub value_set {
                    'property-model'  => $row[1]
         };
         # only add the 'terms' if terms were found
-        if ($terms_exist){ $data->{'terms'} = [];}
+        if ($terms_exist){ 
+            $data->{'terms'} = [];
+        }
 
     } # end unless first iteration
 
@@ -343,9 +398,6 @@ sub value_set {
     }
 
   } # end while
-
-  $self->app->log->info(" done iterating");
-    
 
   # done - now return
   $self->render( json => $data );
@@ -363,19 +415,21 @@ INPUT:
     nothing
 
 OUTPUT: 
-    json array of value sets, describing value set attributes
-    and the property to which the value set belongs
-    [  
-       {
-           "value_set":{
-              "id":<value_set.id>,
-              "url":<value_set.url>
-           },
-           "property-handle":<property.handle>
+    [
+        {
+            "term": {
+                "id": "cea0ebd8-a874-4cf5-b456-1f4aff66b4a4",
+                "value": "F"
+            },
+            "term-origin": "ICDC"
         },
-        ...
-    ]
-
+        {
+            "term": {
+                "id": "bab625e6-b1c3-41b9-b949-de37cfaa2973",
+                "value": "M"
+            },
+            "term-origin": "ICDC"
+        },
 =cut
 ############################################################
 sub terms {
@@ -417,17 +471,14 @@ INPUT:
     :term
 
 OUTPUT: 
-    json array of value sets, describing value set attributes
-    and the property to which the value set belongs
-    [  
-       {
-           "value_set":{
-              "id":<value_set.id>,
-              "url":<value_set.url>
-           },
-           "property-handle":<property.handle>
-        },
-        ...
+    [
+        {
+            "term": {
+                "id": "0393d7e6-8126-44f5-a884-06d6e0836f8e",
+                "value": "blood"
+            },
+            "term-origin": "ICDC"
+        }
     ]
 
 =cut

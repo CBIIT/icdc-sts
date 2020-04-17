@@ -86,10 +86,20 @@ Q
 Q
 
     #// value_set - list
-    get_value_sets_list => <<Q,
-	    MATCH (vs:value_set)
-    	OPTIONAL MATCH (p:property)-[:has_value_set]->(vs)
-    	RETURN DISTINCT p.handle as `property-handle`, vs.id as `id`, vs.url as `url`
+    get_value_sets_list => <<'Q',
+    	MATCH (vs:value_set)
+    	MATCH (p:property)-[:has_value_set]->(vs)
+    	OPTIONAL MATCH (p)-[:has_concept]->(cp:concept)
+    	OPTIONAL MATCH (ct:term)-[:represents]->(cp)
+    	OPTIONAL MATCH (vs)-[:has_term]->(t:term)
+    	OPTIONAL MATCH (ct)-[:has_origin]->(cto:origin)
+    	OPTIONAL MATCH (vs)-[:has_origin]->(vso:origin)
+    	RETURN DISTINCT p.handle as `property-handle`, 
+			p.model as `property-model`,
+			vs.id as `value_set-id`, 
+			vs.url as `value_set-url`, 
+			t.id as `term-id`, 
+			t.value as `term-value`;
 Q
 
     #// value_set - detail
