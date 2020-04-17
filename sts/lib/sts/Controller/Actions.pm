@@ -266,6 +266,92 @@ sub value_sets {
 }
 
 
+############################################################
+=item value_set()
+
+DESCRIPTION:
+    gets details about a single value set in MDB
+
+INPUT:  
+    value_set_id
+
+OUTPUT: 
+    json of a single value set, describing value set attributes
+    and the property to which the value set belongs
+    [  
+       {
+           "value_set":{
+              "id":<value_set.id>,
+              "url":<value_set.url>
+           },
+           "property-handle":<property.handle>
+        },
+        ...
+    ]
+
+=cut
+############################################################
+sub value_set {
+  my $self = shift;
+
+  my $vs_id = $self->stash('value_set_id');
+  $self->app->log->info("using value_set $vs_id");
+
+  # just make sure we have term to proceed, else return error 400
+  unless ($vs_id) {
+     $self->render(json => { errmsg => "Missing or non-existent value_set id"},
+                   status => 400);
+     return;
+  }
+
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  my $h = { param => $vs_id };
+  
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  my $run_query_sref = $self->get_value_set_detail_sref;
+  my $stream = $run_query_sref->($h);
+
+  # handle returned data -- single hash here
+  my $data = {};
+  while ( my @row = $stream->fetch_next ) {
+    # now format
+ 
+    # see if we want terms handled
+    # need to see if the exist before we can test
+    my $terms_exist = -1;
+    if ( defined ($row[4]) || defined ($row[5]) ) {
+            $terms_exist = 1;
+    }else{
+        $terms_exist = 0;
+    }
+        
+    unless (exists $data->{'value_set'}) {
+        $data = { 'value_set' => { 'id'  => $row[2],
+                                    'url' => $row[3] },
+                   'property-handle' => $row[0],
+                   'property-model'  => $row[1]
+        };
+        # only add the 'terms' if terms were found
+        if ($terms_exist){ $data->{'terms'} = [];}
+
+    } # end unless first iteration
+
+    # now only if there are terms, add them under the 'terms' array
+    if ($terms_exist) {
+        my $term_ = { 'term' => {'id' => $row[4], 'value' => $row[5]} };
+        push @{$data->{'terms'}}, $term_;
+    }
+
+  } # end while
+
+  $self->app->log->info(" done iterating");
+    
+
+  # done - now return
+  $self->render( json => $data );
+}
+
+
 
 ############################################################
 =item terms()
@@ -310,7 +396,7 @@ sub terms {
     # now format
     my $t = { 'term' => { 'value'  => $row[0],
                           'id'   => $row[1] },
-              'origin' => $row[2] };
+              'term-origin' => $row[2] };
     
     push @$data, $t;
   }

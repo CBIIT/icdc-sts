@@ -93,10 +93,10 @@ Q
 Q
 
     #// value_set - detail
-    value_sets_detail => <<'Q',
+    get_value_set_detail => <<'Q',
     	MATCH (vs:value_set)
     	MATCH (p:property)-[:has_value_set]->(vs)
-        WHERE p.handle = "sex"
+        WHERE vs.id = $param
     	OPTIONAL MATCH (p)-[:has_concept]->(cp:concept)
     	OPTIONAL MATCH (ct:term)-[:represents]->(cp)
     	OPTIONAL MATCH (vs)-[:has_term]->(t:term)

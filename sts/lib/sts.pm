@@ -29,7 +29,6 @@ sub startup {
     $r->get('/value_sets/:value_set_id')->to('actions#value_set');
     $r->get('/terms')->to('actions#terms');
     $r->get('/terms/:term')->to('actions#term');
-    $r->get('/dune/:term')->to('actions#dune');
 
     # setup db interface
     setup_mdb_interface($self);
