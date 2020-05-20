@@ -23,15 +23,33 @@ sub startup {
     # Normal route to controller
     $r->get('/')->to('actions#ack');
     $r->get('/healthcheck')->to('actions#healthcheck');
-
-    $r->get('/node/list')->to('actions#list_nodes');
+    #$r->get('/healthcheck2')->to('actions#healthcheck2');
+    $r->get('/node/summary')->to('actions#all_node_summary');
     $r->get('/node/all')->to('actions#all_node_details');
     $r->get('/node/:node_id')->to('actions#node_details');
     $r->get('/properties')->to('actions#properties');
-    $r->get('/value_sets')->to('actions#value_sets');
+
+    $r->get('/value_sets')->to('actions#value_sets'); 
+    $r->get('/value_sets/all')->to('actions#value_sets');
     $r->get('/value_sets/:value_set_id')->to('actions#value_set');
+    
+    $r->get('/value_set')->to('actions#value_sets'); 
+    $r->get('/value_set/all')->to('actions#value_sets');
+    $r->get('/value_set/:value_set_id')->to('actions#value_set');
+    
     $r->get('/terms')->to('actions#terms');
     $r->get('/terms/:term')->to('actions#term');
+
+    $r->get('/icdc/node/list')->to('actions#list_icdc_nodes');
+    $r->get('/icdc/value_set/list')->to('actions#list_icdc_value_sets');
+    $r->get('/icdc/terms/list')->to('actions#list_icdc_terms');
+
+    $r->get('/ctdc/node/list')->to('actions#list_ctdc_nodes');
+    $r->get('/ctdc/value_set/list')->to('actions#list_ctdc_value_sets');
+    $r->get('/ctdc/terms/list')->to('actions#list_ctdc_terms');
+    
+
+
 
     # initial simple sanitization helper (sanitize_input)
     setup_sanitizer($self);

@@ -1,6 +1,9 @@
 package sts::Controller::Actions;
 use Mojo::Base 'Mojolicious::Controller';
-
+#use YAML::XS;
+use JSON::PP;
+use YAML::Tiny;
+use Data::Dumper;
 
 ############################################################
 =head1 NAME
@@ -139,7 +142,7 @@ OUTPUT:
 
 =cut
 ############################################################
-sub list_nodes {
+sub all_node_summary {
   my $self = shift;
 
   # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
@@ -252,6 +255,7 @@ sub node_details {
   my $self = shift;
 
   my $node_id = $self->stash('node_id');
+  my $format = $self->param('format');
 
   my $sanitizer = $self->sanitize_input_sref;
   $node_id = $sanitizer->($node_id); # simple sanitization
@@ -360,12 +364,74 @@ sub node_details {
       }
 
   if (!keys %{$data} ) {
-     $self->render(json => { errmsg => "Missing or non-existent node id"},
-                   status => 400);
+     $self->render(json => { errmsg => "Missing or non-existent node id"}, status => 400); 
   }
-  
-  # done - now return
-  $self->render( json => $data );
+
+  if ( defined ($format) && ($format eq 'yaml')) {
+      my $yaml = Dump( $data);  ## YAML::XS
+      $self->render (text => $yaml);
+  } else {
+      # done - now return
+      $self->render( json => $data );
+  }
+}
+
+
+############################################################
+sub list_ctdc_nodes {
+  my $self = shift;
+
+
+  $self->app->log->info("getting details for all nodes for model ctdc");
+
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  # my $h = { param => $node_id }
+    my $h = { param => "CTDC" };
+
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  my $run_query_sref = $self->get_model_nodes_sref;
+  my $stream = $run_query_sref->($h);
+
+  # now handle the query result
+  my $data = '';
+  my $headers = "node-handle, node-id</br>";
+  $data .=  $headers;
+  while ( my @row = $stream->fetch_next ) {
+    # now format
+      
+      $data .=  $row[1] . ", " . $row[0] . "</br>";
+  }
+
+  $self->render( text => $data);
+}
+
+####################################### 
+sub list_icdc_nodes {
+  my $self = shift;
+
+  $self->app->log->info("getting details for all nodes for model icdc");
+
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  # my $h = { param => $node_id };
+  my $h = { param => 'ICDC' };
+
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  my $run_query_sref = $self->get_model_nodes_sref;
+  my $stream = $run_query_sref->($h);
+
+  # now handle the query result
+  my $data = '';
+  my $headers = "node-handle, node-id</br>";
+  $data .=  $headers;
+  while ( my @row = $stream->fetch_next ) {
+    # now format
+      
+      $data .=  $row[1] . ", " . $row[0] . "</br>";
+  }
+
+  $self->render( text => $data);
 }
 
 
@@ -614,6 +680,75 @@ sub value_set {
   $self->render( json => $data );
 }
 
+
+####################################### 
+sub list_ctdc_value_sets {
+  my $self = shift;
+
+  $self->app->log->info("getting details for all value_sets for model ctdc");
+
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  # my $h = { param => $node_id };
+  my $h = { param => 'CTDC' };
+
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  my $run_query_sref = $self->get_model_value_sets_sref;
+  my $stream = $run_query_sref->($h);
+
+ # now handle the query result
+  my $data = '';
+  my $headers = "value_set, term , url </br>";
+  $data .=  $headers;
+  while ( my @row = $stream->fetch_next ) {
+    # now format
+     my $vs = $row[2] || '';
+     my $t = $row[5] || '';
+     my $u = $row[3] || '';
+      $data .=  "$vs, $t, $u </br>";
+  }
+
+  $self->render( text => $data);
+}
+
+####################################### 
+sub list_icdc_value_sets {
+  my $self = shift;
+
+  $self->app->log->info("getting details for all value_sets for model icdc");
+
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  # my $h = { param => $node_id };
+  my $h = { param => 'ICDC' };
+
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  my $run_query_sref = $self->get_model_value_sets_sref;
+  my $stream = $run_query_sref->($h);
+
+  ## now handle the query result
+  #my $data = '';
+  #my $headers = "value_set_handle-handle, value_set_handle.url, term-value, term-id, value_set-id</br>";
+  #$data .=  $headers;
+  #while ( my @row = $stream->fetch_next ) {
+  #  # now format
+  #    #$data .=  $row[1] . ", " . $row[2] . ", " . $row[3] . ", " . $row[4] . ", " . $row[5] . "</br>";
+  #}
+
+ # now handle the query result
+  my $data = '';
+  my $headers = "value_set, term , url </br>";
+  $data .=  $headers;
+  while ( my @row = $stream->fetch_next ) {
+    # now format
+     my $vs = $row[2] || '';
+     my $t = $row[5] || '';
+     my $u = $row[3] || '';
+      $data .=  "$vs, $t, $u </br>";
+  }
+
+  $self->render( text => $data);
+}
 
 
 ############################################################

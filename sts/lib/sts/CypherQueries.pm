@@ -102,6 +102,19 @@ Q
             			o.name;
 Q
 
+get_model_nodes => <<'Q',
+	    MATCH (n1:node)				
+		WHERE n1.model = $param
+    	OPTIONAL MATCH (n1)<-[:has_src]-(r12:relationship)-[:has_dst]->(n2:node)
+	    OPTIONAL MATCH (n3)<-[:has_src]-(r31:relationship)-[:has_dst]->(n1:node)
+    	OPTIONAL MATCH (n1)-[:has_property]->(p1:property)
+    	OPTIONAL MATCH (n1)-[:has_concept]->(c1:concept)
+    	OPTIONAL MATCH (ct:term)-[:represents]->(c1)
+    	OPTIONAL MATCH (ct)-[:has_origin]->(o:origin)
+    	RETURN DISTINCT n1.id as `node-id`,
+						n1.handle as `node-handle`;
+Q
+
     #// property - list
     get_properties_list => <<Q,
 	    MATCH (p:property) 
@@ -149,6 +162,23 @@ Q
 			t.value as `term-value`;
 Q
 
+    #// value_set - list
+    get_value_set_list => <<'Q',
+    	MATCH (vs:value_set)
+    	MATCH (p:property)-[:has_value_set]->(vs)
+    	OPTIONAL MATCH (p)-[:has_concept]->(cp:concept)
+    	OPTIONAL MATCH (ct:term)-[:represents]->(cp)
+    	OPTIONAL MATCH (vs)-[:has_term]->(t:term)
+    	OPTIONAL MATCH (ct)-[:has_origin]->(cto:origin)
+    	OPTIONAL MATCH (vs)-[:has_origin]->(vso:origin)
+    	RETURN DISTINCT p.handle as `property-handle`, 
+			p.model as `property-model`,
+			vs.id as `value_set-id`, 
+			vs.url as `value_set-url`, 
+			t.id as `term-id`, 
+			t.value as `term-value`;
+Q
+
     #// value_set - detail
     get_value_set_detail => <<'Q',
     	MATCH (vs:value_set)
@@ -167,6 +197,22 @@ Q
 			t.value as `term-value`;
 Q
 
+    #// value_set - detail
+    get_model_value_sets => <<'Q',
+    	MATCH (p:property)-[:has_value_set]->(vs:value_set)
+    	WHERE p.model = $param
+		MATCH (vs)-[:has_handle]->(vsh:value_set_handle)
+    	OPTIONAL MATCH (vs)-[:has_term]->(t:term)
+		OPTIONAL MATCH (t)-[:has_handle]->(th:term_handle)
+    	OPTIONAL MATCH (ct)-[:has_origin]->(cto:origin)
+    	RETURN DISTINCT 
+			vs.id as `value_set-id`, 
+			vsh.id as `value_set_handle-id`,
+			vsh.handle as `value_set_handle-handle`, 
+			vsh.url as `value_set-url`, 
+			t.id as `term-id`, 
+			th.value as `term-handle`;
+Q
 
     #// term - list
     get_terms_list => <<Q,
