@@ -113,8 +113,10 @@ sub healthcheck {
 }
 
 
+
+
 ############################################################
-=item nodes()
+=item list_nodes()
 
 DESCRIPTION:
     gets a list of nodes in MDB
@@ -128,6 +130,7 @@ OUTPUT:
        {
            "node":{
               "handle":<node.handle>,
+              "id":node.id
               "model":"node.model"
            }
         },
@@ -136,25 +139,231 @@ OUTPUT:
 
 =cut
 ############################################################
-sub nodes {
+sub list_nodes {
   my $self = shift;
 
   # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
   # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
   # $h is empty (no parameters is being passed)
   my $h = {};
-  my $run_query_sref = $self->get_nodes_list_sref;
+  my $run_query_sref = $self->get_list_of_nodes_sref;
   my $stream = $run_query_sref->($h);
 
   # now handle the query result
   my $data = [];
   while ( my @row = $stream->fetch_next ) {
     # now format
-    my $n = { 'node' => { 'handle' => $row[0],
-                          'model'  => $row[1] } };
+    my $n = { 'node' => { 'id' => $row[0],
+                          'handle' => $row[1],
+                          'model'  => $row[2] } };
     push @$data, $n;
   }
 
+  # done - now return
+  $self->render( json => $data );
+}
+
+####################################### 
+sub all_node_details {
+  my $self = shift;
+
+  $self->app->log->info("getting details for all nodes");
+
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  # my $h = { param => $node_id };
+  my $h = {};
+
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  my $run_query_sref = $self->get_all_node_details_sref;
+  my $stream = $run_query_sref->($h);
+
+  # now handle the query result
+  my $data = [];
+  while ( my @row = $stream->fetch_next ) {
+    # now format
+    my $n = { 'node' => { 'node-id' => $row[0],
+                          'node-handle' => $row[1],
+                          'node-model'  => $row[2],
+                          'to_relationship' => $row[3],
+						              'to_node_id' => $row[4],
+                          'to_node_handle' => $row[5],
+                          'to_node_model' => $row[6],
+                          'from_relationship' => $row[7],
+                          'from_node_id' => $row[8],
+                          'from_node_handle' => $row[9],
+                          'from_node_model' => $row[10],
+                          'property_id' => $row[11],
+                          'property_handle' => $row[12],
+                          'property_value_domain' => $row[13],
+                          'property_model' => $row[14],
+                          'concept_id' => $row[15],
+                          'concept_term_id' => $row[16],
+                          'concept_term_value' => $row[17],
+                          'concept_term_origin_id' => $row[18],
+                          'concept_term_origin_definition' => $row[19],
+                          'concept_term_comments' => $row[20],
+                          'concept_term_notes' => $row[21],
+                          'concept_term_origin' => $row[22]  } };
+    push @$data, $n;
+  }
+
+  # done - now return
+  $self->render( json => $data );
+}
+
+
+############################################################
+=item node_details()
+
+DESCRIPTION:
+    get details for a single node
+
+INPUT:  
+    id (node.id)
+
+OUTPUT: 
+    describes node, relationships, and properties  where (n2)->(n1)->(n3)
+    [  
+       {
+           "node":{
+                  n1.id,
+						      n1.handle, 
+            			n1.model, 
+            			r12.handle,
+						      n2.id, 
+            			n2.handle, 
+            			r31.handle,
+						      n3.id, 
+            			n3.handle, 
+            			p1.handle, 
+            			ct.value, 
+            			ct.origin_id, 
+            			ct.origin_definition, 
+            			o.name;
+           }
+        },
+        ...
+    ]
+
+=cut
+############################################################
+sub node_details {
+  my $self = shift;
+
+  my $node_id = $self->stash('node_id');
+
+  my $sanitizer = $self->sanitize_input_sref;
+  $node_id = $sanitizer->($node_id); # simple sanitization
+
+  $self->app->log->info("getting details for node >$node_id<");
+
+  # just make sure we have term to proceed, else return error 400
+  unless ($node_id) {
+     $self->render(json => { errmsg => "Missing or non-existent node id"},
+                   status => 400);
+     return;
+  }
+
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  # my $h = { param => $node_id };
+  my $h = { param => $node_id };
+
+  # get subroutine_ref to exec Neo4j::Bolt's `run_query` (defined in sts.pm)
+  # $h is anon hash, used for [$param_hash] in Neo4j::Bolt::Cxn
+  my $run_query_sref = $self->get_node_details_sref;
+  my $stream = $run_query_sref->($h);
+
+  # now handle the query result
+  my $data = {};
+  while ( my @row = $stream->fetch_next ) {
+    # now format
+
+        # see if we want from and to nodes handled
+        # need to see if the exist before we can test
+        my $from_node_exists = 0;
+        if ( defined ($row[8])) {
+                $from_node_exists = $row[7];
+        }
+        my $to_node_exists = 0;
+        if ( defined ($row[4])) {
+                $to_node_exists = $row[3];
+        }
+        my $property_exists = 0;
+        if ( defined ($row[11])) {
+                $property_exists = 1;
+        }
+
+        unless (exists $data->{'node'}) {
+            $data = { 'node' => { 'node-id'  => $row[0],
+                                  'node-handle' => $row[1],
+                                  'node-model' => $row[2] ,
+                                  'has-concept' => {
+                                          'concept-id' => $row[15] ,
+                                          'represented-by' => {
+                                              'term-id' => $row[16],
+                                              'term-value' => $row[17],
+                                              'term-origin_id' => $row[18],
+                                              'term-origin_definition' => $row[19],
+                                              'term-comments' => $row[20],
+                                              'term-notes' => $row[21],
+                                              'term-origin' => $row[22]
+                                          }
+                                    }
+                                }
+                    }
+        };
+            
+        #  # only add if the X were found
+          if ($from_node_exists) {
+                unless ( exists $data->{'node'}->{$from_node_exists} ) {
+                    $data->{'node'}->{$from_node_exists} = {
+                                    'node-id'  => $row[8],
+                                    'node-handle' => $row[9],
+                                    'node-model' => $row[10] };
+                }         
+            }
+            
+            if ($to_node_exists){ 
+                unless (exists $data->{'node'}->{$to_node_exists} ) {
+                  $data->{'node'}->{$to_node_exists} = {
+                                    'node-id'  => $row[4],
+                                    'node-handle' => $row[5],
+                                    'node-model' => $row[6]};
+                }
+            }
+
+            
+            # property
+            if ($property_exists) { 
+                unless (exists $data->{'node'}->{'has-property'}) {
+                        $data->{'node'}->{'has-property'} = [];
+                        $data->{'node'}->{'_seen-property'} = [];
+                }
+              # only add unique props
+              my %seen = map { $_ => 1 } @{$data->{'node'}->{'_seen-property'}};
+              unless (exists $seen{$row[11]} ) {
+                  push @{$data->{'node'}->{'_seen-property'}}, $row[11];
+                  my $prop = {'property-id' => $row[11],
+                              'property-handle' => $row[12],
+                              'property-value_domain' => $row[13],
+                              'property-model' => $row[14] };
+                  push @{$data->{'node'}->{'has-property'}}, $prop;
+              }
+            }
+
+      } # end while
+
+      ## clean up
+      if (  exists ( $data->{'node'}) && exists $data->{'node'}->{'_seen-property'} ) {
+          delete($data->{'node'}->{'_seen-property'});
+      }
+
+  if (!keys %{$data} ) {
+     $self->render(json => { errmsg => "Missing or non-existent node id"},
+                   status => 400);
+  }
+  
   # done - now return
   $self->render( json => $data );
 }
@@ -348,7 +557,9 @@ sub value_set {
   my $self = shift;
 
   my $vs_id = $self->stash('value_set_id');
-  $self->app->log->info("using value_set $vs_id");
+  my $sanitizer = $self->sanitize_input_sref;
+  $vs_id = $sanitizer->($vs_id); # simple sanitization
+  $self->app->log->info("using value_set >$vs_id<");
 
   # just make sure we have term to proceed, else return error 400
   unless ($vs_id) {
@@ -695,13 +906,15 @@ sub domain_payload {
    };
 }
 
+
+
+
+
+
 #######
 =back
 
 =cut
 #######
 
-
 1;
-
-

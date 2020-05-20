@@ -1,9 +1,10 @@
 package sts;
-use version; our $VERSION = '0.1.9';
+use version; our $VERSION = '0.2.0';
 use Mojo::Base 'Mojolicious';
 use DBI;
 use Neo4j::Bolt;
 use sts::CypherQueries qw( %queries );
+use sts::helpers qw( setup_sanitizer );
 use strict;
 
 # This method will run once at server start
@@ -22,17 +23,23 @@ sub startup {
     # Normal route to controller
     $r->get('/')->to('actions#ack');
     $r->get('/healthcheck')->to('actions#healthcheck');
-    #$r->get('/healthcheck2')->to('actions#healthcheck2');
-    $r->get('/nodes')->to('actions#nodes');
+
+    $r->get('/node/list')->to('actions#list_nodes');
+    $r->get('/node/all')->to('actions#all_node_details');
+    $r->get('/node/:node_id')->to('actions#node_details');
     $r->get('/properties')->to('actions#properties');
     $r->get('/value_sets')->to('actions#value_sets');
     $r->get('/value_sets/:value_set_id')->to('actions#value_set');
     $r->get('/terms')->to('actions#terms');
     $r->get('/terms/:term')->to('actions#term');
 
+    # initial simple sanitization helper (sanitize_input)
+    setup_sanitizer($self);
+
     # setup db interface
     setup_mdb_interface($self);
     $self->log->debug("Ready");
+
 }
 
 

@@ -28,30 +28,77 @@ Q
 
 
     #// node - list
-    get_nodes_list => <<Q,
+    get_list_of_nodes => <<Q,
 	    MATCH (n:node)
-    	RETURN DISTINCT n.handle, n.model;
+    	RETURN DISTINCT n.id, n.handle, n.model;
 Q
 
-    #// node - detail
-    nodes_detail => <<Q,
-	    MATCH (n1:node)
+    get_all_node_details => <<'Q',
+	    MATCH (n1:node)				
     	OPTIONAL MATCH (n1)<-[:has_src]-(r12:relationship)-[:has_dst]->(n2:node)
 	    OPTIONAL MATCH (n3)<-[:has_src]-(r31:relationship)-[:has_dst]->(n1:node)
     	OPTIONAL MATCH (n1)-[:has_property]->(p1:property)
     	OPTIONAL MATCH (n1)-[:has_concept]->(c1:concept)
     	OPTIONAL MATCH (ct:term)-[:represents]->(c1)
     	OPTIONAL MATCH (ct)-[:has_origin]->(o:origin)
-    	RETURN DISTINCT n1.handle, 
-            			n1.model, 
-            			r12.handle, 
+    	RETURN DISTINCT n1.id as `node-id`,
+						n1.handle as `node-handle`, 
+            			n1.model as `node-model`, 
+            			r12.handle as `to-relationship`,
+						n2.id as `to-node`, 
             			n2.handle, 
-            			r31.handle, 
-            			n3.handle, 
-            			p1.handle, 
-            			ct.value, 
+						n2.model,
+            			r31.handle,
+						n3.id, 
+            			n3.handle,
+						n3.model, 
+            			p1.id,
+						p1.handle,
+						p1.value_domain,
+						p1.model,
+						c1.id, 
+            			ct.id,
+						ct.value, 
             			ct.origin_id, 
             			ct.origin_definition, 
+						ct.comments, 
+            			ct.notes,
+            			o.name;
+Q
+
+    #// node - detail
+	#// idea: n3 -> n1 --> n2
+    get_node_details => <<'Q',
+	    MATCH (n1:node)				
+		WHERE n1.id = $param
+    	OPTIONAL MATCH (n1)<-[:has_src]-(r12:relationship)-[:has_dst]->(n2:node)
+	    OPTIONAL MATCH (n3)<-[:has_src]-(r31:relationship)-[:has_dst]->(n1:node)
+    	OPTIONAL MATCH (n1)-[:has_property]->(p1:property)
+    	OPTIONAL MATCH (n1)-[:has_concept]->(c1:concept)
+    	OPTIONAL MATCH (ct:term)-[:represents]->(c1)
+    	OPTIONAL MATCH (ct)-[:has_origin]->(o:origin)
+    	RETURN DISTINCT n1.id as `node-id`,
+						n1.handle as `node-handle`, 
+            			n1.model as `node-model`, 
+            			r12.handle as `to-relationship`,
+						n2.id as `to-node`, 
+            			n2.handle, 
+						n2.model,
+            			r31.handle,
+						n3.id, 
+            			n3.handle,
+						n3.model, 
+            			p1.id,
+						p1.handle,
+						p1.value_domain,
+						p1.model,
+						c1.id, 
+            			ct.id,
+						ct.value, 
+            			ct.origin_id, 
+            			ct.origin_definition, 
+						ct.comments, 
+            			ct.notes,
             			o.name;
 Q
 
